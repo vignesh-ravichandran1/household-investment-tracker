@@ -37,3 +37,6 @@ backups/
 
 # Docker data volume (compose.yaml mounts ./data)
 data/
+
+# home server logs
+logs/
