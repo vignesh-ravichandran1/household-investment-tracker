@@ -81,6 +81,12 @@ describe('applyPinAuth', () => {
         body: `pin=${pin}&next=%2F`,
     });
 
+    it('serves pages with Referrer-Policy same-origin so form POSTs carry a real Origin', async () => {
+        const base = await start(tmp());
+        const res = await fetch(`${base}/login`, { headers: lan });
+        expect(res.headers.get('referrer-policy')).toBe('same-origin');
+    });
+
     it('lets loopback through without a PIN', async () => {
         const base = await start(tmp());
         expect((await fetch(`${base}/api/state`)).status).toBe(200);

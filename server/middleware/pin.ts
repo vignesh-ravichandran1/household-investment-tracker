@@ -178,6 +178,14 @@ export function applyPinAuth(app: Express, options: { dataDir: string; now?: () 
     let lockouts = 0;
     let lockedUntil = 0;
 
+    // Helmet's default Referrer-Policy (no-referrer) makes browsers send "Origin: null" on POSTs from
+    // our pages (the PIN form, and saves from the app), which CORS then rejects as "Origin not allowed".
+    // same-origin still sends no referrer to other sites but lets same-site POSTs carry the real origin.
+    app.use((_req, res, next) => {
+        res.set('Referrer-Policy', 'same-origin');
+        next();
+    });
+
     const noPinMessage = 'No PIN set yet. On the server computer run windows\\set-pin.bat (or npm run pin).';
 
     app.get('/login', (req, res) => {
