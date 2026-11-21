@@ -10,6 +10,7 @@ import {
     type Distribution,
 } from './config.js';
 import { createDbStore, db } from './lib/db.js';
+import { applyPinAuth } from './middleware/pin.js';
 import { applyRateLimiters, applySecurityMiddleware, errorHandler } from './middleware/security.js';
 import { createDividendsRouter } from './routes/dividends.js';
 import { createMarketRouter } from './routes/market.js';
@@ -25,11 +26,16 @@ export function createApp(options?: {
     staticDir?: string;
     currentVersion?: string;
     distribution?: Distribution;
+    /** Fork addition: require the PIN (auth.json in this folder) for everything except loopback. */
+    pinAuthDataDir?: string;
 }): Express {
     const store = options?.store ?? db;
     const app = express();
 
     applySecurityMiddleware(app, options?.allowedOrigin ?? ALLOWED_ORIGIN);
+    if (options?.pinAuthDataDir) {
+        applyPinAuth(app, { dataDir: options.pinAuthDataDir });
+    }
     if (options?.enableRateLimit !== false) {
         applyRateLimiters(app);
     }
@@ -111,7 +117,12 @@ export async function startServer(options: {
     currentVersion?: string;
     distribution?: Distribution;
     enableRateLimit?: boolean;
+    /** Fork addition: require the PIN; needs dataDir. */
+    requirePin?: boolean;
 }): Promise<RunningServer> {
+    if (options.requirePin && !options.dataDir) {
+        throw new Error('requirePin needs dataDir (where auth.json lives)');
+    }
     const host = options.host ?? HOST;
     const requestedPort = await findAvailablePort(options.port, host, options.strictPort);
 
@@ -130,6 +141,7 @@ export async function startServer(options: {
         staticDir: options.staticDir,
         currentVersion: options.currentVersion,
         distribution: options.distribution,
+        pinAuthDataDir: options.requirePin ? options.dataDir : undefined,
     });
 
     const server = await new Promise<http.Server>((resolve, reject) => {

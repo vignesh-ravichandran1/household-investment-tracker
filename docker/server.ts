@@ -21,6 +21,8 @@ const running = await startServer({
     dataDir,
     staticDir,
     distribution: 'diy',
+    // Fork addition: PIN login on by default; HIT_REQUIRE_PIN=0 turns it off.
+    requirePin: process.env.HIT_REQUIRE_PIN !== '0',
 });
 
 let shuttingDown = false;
